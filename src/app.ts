@@ -4,47 +4,32 @@ import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import routes from './routes/index.js';
 import { errorHandler } from './middlewares/error.middleware.js';
+import { securityHeaders, apiLimiter } from './middlewares/security.middleware.js';
 
-/**
- * Creates and configures the Express application.
- * 
- * Sets up middleware (CORS, JSON parsing) and routes.
- * Error handler must be the last middleware.
- * Exported for use in server.ts and testing.
- * 
- * @returns Configured Express application
- * 
- * @example
- * ```typescript
- * import { createApp } from './app';
- * const app = createApp();
- * ```
- */
+// crée l'application Express (utilisée par server.ts et par les tests)
 export function createApp(): Express {
   const app = express();
 
-  // Middleware
+  app.use(securityHeaders); // helmet
   app.use(cors({ origin: env.CORS_ORIGIN }));
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // Request logging
+  // log de chaque requête
   app.use((req, res, next) => {
     logger.info({ method: req.method, url: req.url }, 'Incoming request');
     next();
   });
 
-  // Health check endpoint
   app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // API routes
-  app.use('/api', routes);
+  // routes de l'API avec la limite de requêtes
+  app.use('/api', apiLimiter, routes);
 
-  // Error handler (must be last)
+  // gestion des erreurs (toujours en dernier)
   app.use(errorHandler);
 
   return app;
 }
-
