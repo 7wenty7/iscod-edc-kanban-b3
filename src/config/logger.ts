@@ -1,23 +1,14 @@
 import pino from 'pino';
 import { env } from './env.js';
 
-/**
- * Pino logger instance configuration.
- * 
- * Provides structured logging with different levels (info, error, warn, debug).
- * In development mode, uses pretty printing for better readability.
- * In production, outputs JSON for log aggregation tools.
- * 
- * @example
- * ```typescript
- * import { logger } from './config/logger';
- * 
- * logger.info({ userId: 123 }, 'User logged in');
- * logger.error({ error }, 'Failed to process request');
- * ```
- */
+// niveau des logs : rien pendant les tests, tout en développement
+let level = 'debug';
+if (env.NODE_ENV === 'production') level = 'info';
+if (env.NODE_ENV === 'test') level = 'silent';
+
 export const logger = pino({
-  level: env.NODE_ENV === 'production' ? 'info' : 'debug',
+  level,
+  // logs lisibles et en couleur en développement
   transport:
     env.NODE_ENV === 'development'
       ? {
@@ -30,4 +21,3 @@ export const logger = pino({
         }
       : undefined,
 });
-
